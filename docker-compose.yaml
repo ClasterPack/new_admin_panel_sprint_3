@@ -1,0 +1,88 @@
+services:
+  gateway:
+    build:
+      context: docker/nginx
+      dockerfile: Dockerfile
+    container_name: theatre-gateway
+    restart: always
+    volumes:
+      - static_volume:/code/staticfiles:ro
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - theatre_network
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: theatre-api
+    volumes:
+      - static_volume:/code/staticfiles
+    env_file:
+      - ./.env
+    depends_on:
+      theatre-db:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - theatre_network
+
+  theatre-db:
+    image: postgres:14
+    container_name: theatre-db
+    restart: always
+    volumes:
+      - content_db:/var/lib/postgresql/data/
+      - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./.env
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'",
+        ]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - theatre_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.10.0
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - discovery.type=single-node  # Для работы в одиночном режиме
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m  # Устанавливаем ограничение по памяти
+    volumes:
+      - es_data:/usr/share/elasticsearch/data  # Монтируем volume для данных Elasticsearch
+    ports:
+      - "9200:9200"  # HTTP порт
+      - "9300:9300"  # Для межнодовых соединений
+    networks:
+      - theatre_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 30s
+      retries: 3
+      timeout: 30s
+    depends_on:
+      theatre-db:
+        condition: service_healthy
+
+
+volumes:
+  content_db:
+  static_volume:
+  es_data:
+
+networks:
+  theatre_network:
+    driver: bridge
