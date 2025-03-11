@@ -80,7 +80,7 @@ def load_data_to_elasticsearch(
                 es,
                 bulk_data,
                 request_timeout=200,
-                headers={"Content-Type": "application/x-ndjson"}  # Correct content type for bulk requests
+                headers={"Content-Type": "application/x-ndjson"}
             )
             logger.info(f"Successfully loaded {success} documents in batch.")
             if failed:
@@ -94,13 +94,10 @@ def create_es_mapping(pydantic_model: BaseModel):
         "properties": {}
     }
 
-    # Walk through the annotations of the model
     for field, field_type in pydantic_model.__annotations__.items():
-        # Get the Elasticsearch field type from type_map
         es_field_type = type_map.get(field_type)
 
         if es_field_type:
-            # If a type is found in type_map, add it to the mapping
             mapping["properties"][field] = {"type": es_field_type}
         elif hasattr(field_type, "__origin__"):
             if field_type.__origin__ == List:
@@ -136,7 +133,7 @@ def create_index(model: BaseModel, index_name: str, es: Elasticsearch, settings:
     }
 
     if settings:
-        mapping["settings"] = settings  # Add custom settings if provided
+        mapping["settings"] = settings
 
     try:
         logger.info("Creating index '%s'..." % index_name)
