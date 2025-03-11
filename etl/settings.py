@@ -1,18 +1,25 @@
 import os
-from uuid import UUID
+from datetime import datetime
 from typing import List, Optional
+from uuid import UUID
 
 from pydantic import BaseModel
-from dotenv import load_dotenv
-load_dotenv()
+from pydantic.v1 import BaseSettings
 
-class Config(BaseModel):
-    postgres_host: str
-    postgres_db: str
-    postgres_user: str
-    postgres_password: str
-    es_host: str
-    es_index: str
+
+
+class Settings(BaseSettings):
+    POSTGRES_DB: str
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_HOST: str
+    ES_HOST: str
+    ES_INDEX: str
+
+    class Config:
+        env_file = os.path.join(os.path.dirname(__file__), '../.env')
+        env_file_encoding = "utf-8"
+
 
 class Person(BaseModel):
     id: UUID
@@ -23,20 +30,19 @@ class Movie(BaseModel):
     title: str
     description: Optional[str] = None
     imdb_rating: Optional[float] = None
-    genres: List[Optional[str]] = []
-    directors: List[Optional[Person]] = []
-    actors: List[Optional[Person]] = []
-    writers: List[Optional[Person]] = []
-    directors_names: List[str]
-    actors_names: List[str]
-    writers_names: List[str]
+    genres: List[Optional[str]] = None
+    directors_names: Optional[List[str]] = None
+    actors_names: Optional[List[str]] = None
+    writers_names: Optional[List[str]] = None
 
-
-my_config = Config(
-    postgres_host=os.getenv("POSTGRES_HOST"),
-    postgres_db=os.getenv("POSTGRES_DB"),
-    postgres_user=os.getenv("POSTGRES_USER"),
-    postgres_password=os.getenv("POSTGRES_PASSWORD"),
-    es_host=os.getenv("ES_HOST"),
-    es_index=os.getenv("ES_INDEX"),
-)
+type_map = {
+    str: "keyword",
+    datetime: "date",
+    int: "long",
+    float: "float",
+    bool: "boolean",
+    UUID: "keyword",
+    list: "keyword",
+    dict: "nested",
+    BaseModel: "nested"
+}
