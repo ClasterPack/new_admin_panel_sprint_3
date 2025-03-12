@@ -28,7 +28,6 @@ class BaseStorage(abc.ABC):
         """Получить состояние из хранилища."""
 
 
-
 class JsonFileStorage(BaseStorage):
     """Implementation of storage using a local file. Format: JSON"""
 
@@ -42,10 +41,12 @@ class JsonFileStorage(BaseStorage):
         def convert_uuid(obj):
             if isinstance(obj, UUID):
                 return str(obj)
-            raise logger.error(f"Object of type {obj.__class__.__name__} is not serializable")
+            raise logger.error(
+                f"Object of type {obj.__class__.__name__} is not serializable"
+            )
 
         try:
-            with open(self.file_path, 'w') as f:
+            with open(self.file_path, "w") as f:
                 json.dump(state, f, ensure_ascii=False, indent=4, default=convert_uuid)
         except IOError as e:
             logger.error(f"Error writing to file {self.file_path}: {e}")
@@ -65,13 +66,17 @@ class JsonFileStorage(BaseStorage):
             return obj
 
         if not os.path.exists(self.file_path):
-            logger.info(f"No state file found at {self.file_path}. Returning empty state.")
+            logger.info(
+                f"No state file found at {self.file_path}. Returning empty state."
+            )
             return {}
 
         try:
-            with open(self.file_path, 'r') as f:
+            with open(self.file_path, "r") as f:
                 state = json.load(f)
-                return {key: convert_uuid_from_string(value) for key, value in state.items()}
+                return {
+                    key: convert_uuid_from_string(value) for key, value in state.items()
+                }
         except json.JSONDecodeError as e:
             logger.error(f"Error decoding JSON from file {self.file_path}: {e}")
             return {}
@@ -98,4 +103,3 @@ class State:
     def get_state(self, key: str) -> Any:
         """Получить состояние по определённому ключу."""
         return self.state.get(key, None)
-

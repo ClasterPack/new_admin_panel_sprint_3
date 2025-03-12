@@ -16,8 +16,7 @@ def main(setup: Settings):
         logger.info("Extracting data from PostgreSQL...")
         movies_data = extract_data_from_postgres(conn)
 
-        create_index(Movie, 'movies', es)
-
+        create_index(Movie, "movies", es)
 
         logger.info("Loading data to Elasticsearch...")
         load_data_to_elasticsearch(es, movies_data, batch_size=100, state=state)

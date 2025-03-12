@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import find_dotenv, load_dotenv
 from split_settings.tools import include
 
-find_dotenv('./.env')
+find_dotenv("./.env")
 load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -19,7 +19,11 @@ SECRET_KEY = "DJANGO_SECRET_KEY"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", False) == "True"
 
-ALLOWED_HOSTS = [os.environ.get("DJANGO_IP"), os.environ.get("DJANGO_HOST"), os.environ.get("NGINX_HOST")]
+ALLOWED_HOSTS = [
+    os.environ.get("DJANGO_IP"),
+    os.environ.get("DJANGO_HOST"),
+    os.environ.get("NGINX_HOST"),
+]
 
 
 # Application definition
@@ -73,7 +77,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 
 include(
-    'components/database.py',
+    "components/database.py",
 )
 
 
@@ -184,7 +188,7 @@ REST_FRAMEWORK = {
 }
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
+    os.path.join(BASE_DIR, "static"),
 ]
 
 

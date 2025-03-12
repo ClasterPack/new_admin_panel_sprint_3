@@ -34,18 +34,19 @@ def extract_data_from_postgres(conn) -> List[Dict[str, Any]]:
     data = []
     for row in rows:
         movie = Movie(
-            id=row['id'],
-            title=row['title'],
-            description=row.get('description'),
-            imdb_rating=row.get('imdb_rating'),
-            genres=row['genres'],
-            directors_names=row['directors_names'],
-            actors_names=row['actors_names'],
-            writers_names=row['writers_names']
+            id=row["id"],
+            title=row["title"],
+            description=row.get("description"),
+            imdb_rating=row.get("imdb_rating"),
+            genres=row["genres"],
+            directors_names=row["directors_names"],
+            actors_names=row["actors_names"],
+            writers_names=row["writers_names"],
         )
         data.append(movie.model_dump())
 
     return data
+
 
 def get_postgres_connection(config: Settings) -> psycopg.connection:
     try:
@@ -53,7 +54,7 @@ def get_postgres_connection(config: Settings) -> psycopg.connection:
             host=config.POSTGRES_HOST,
             dbname=config.POSTGRES_DB,
             user=config.POSTGRES_USER,
-            password=config.POSTGRES_PASSWORD
+            password=config.POSTGRES_PASSWORD,
         )
         logger.info("Successfully connected to PostgreSQL.")
         return conn
