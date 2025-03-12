@@ -45,7 +45,6 @@ def extract_data_from_postgres(conn) -> List[Dict[str, Any]]:
         )
         data.append(movie.model_dump())
 
-    print(data)
     return data
 
 def get_postgres_connection(config: Settings) -> psycopg.connection:

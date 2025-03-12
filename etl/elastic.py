@@ -7,6 +7,7 @@ from elasticsearch.helpers import bulk
 from pydantic import TypeAdapter, BaseModel
 
 from etl.settings import Movie, Settings, type_map
+from etl.state import State
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ def transform_data(data: List[dict]):
 
 @backoff.on_exception(backoff.expo, Exception, max_tries=5, jitter=None)
 def load_data_to_elasticsearch(
-        es: Elasticsearch, data: List[Dict[str, Any]], batch_size: int
+        es: Elasticsearch, data: List[Dict[str, Any]], batch_size: int, state: State
 ) -> None:
     """
     Загружает данные в Elasticsearch с использованием bulk-запроса.
@@ -70,21 +71,35 @@ def load_data_to_elasticsearch(
     :param batch_size: Размер пакета данных для загрузки.
     :return: None
     """
+    last_loaded_id = state.get_state("last_loaded_id")
+
     try:
         total = len(data)
         logger.info("Loading %s records from Elasticsearch." % total)
-        for i in range(0, total, batch_size):
+        start_index = 0
+        if last_loaded_id:
+            for i, item in enumerate(data):
+                if item.get('id') == last_loaded_id:
+                    start_index = i + 1
+                    break
+        for i in range(start_index, total, batch_size):
             batch = data[i:i+batch_size]
             bulk_data = transform_data(batch)
-            success, failed = bulk(
-                es,
-                bulk_data,
-                request_timeout=200,
-                headers={"Content-Type": "application/x-ndjson"}
-            )
-            logger.info(f"Successfully loaded {success} documents in batch.")
-            if failed:
-                logger.warning(f"Failed to load {failed} documents in batch.")
+            try:
+                success, failed = bulk(
+                    es,
+                    bulk_data,
+                    request_timeout=200,
+                    headers={"Content-Type": "application/x-ndjson"}
+                )
+                logger.info(f"Successfully loaded {success} documents in batch.")
+                if failed:
+                    logger.warning(f"Failed to load {failed} documents in batch.")
+            except Exception as e:
+                logger.error(f"Failed to load batch starting at index %s: %s", i, e)
+            if batch:
+                last_loaded_id = batch[-1].get('id')
+                state.set_state("last_loaded_id", last_loaded_id)  # Сохраняем ID в состоянии
     except Exception as e:
         logger.error("Failed to load data to Elasticsearch: %s" % e)
 

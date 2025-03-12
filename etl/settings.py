@@ -6,6 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel
 from pydantic.v1 import BaseSettings
 
+from etl.state import JsonFileStorage, State
 
 
 class Settings(BaseSettings):
@@ -46,3 +47,6 @@ type_map = {
     dict: "nested",
     BaseModel: "nested"
 }
+
+state_storage = JsonFileStorage('state.json')
+state = State(state_storage) 
