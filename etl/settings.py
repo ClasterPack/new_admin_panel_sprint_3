@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import List, Optional
 from uuid import UUID
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from pydantic.v1 import BaseSettings
 
 from etl.state import JsonFileStorage, State
@@ -26,29 +26,76 @@ class Person(BaseModel):
     id: UUID
     name: str
 
-
 class Movie(BaseModel):
     id: UUID
-    title: str
+    title: str = None
     description: Optional[str] = None
     imdb_rating: Optional[float] = None
-    genres: List[Optional[str]] = None
-    directors_names: Optional[List[str]] = None
-    actors_names: Optional[List[str]] = None
-    writers_names: Optional[List[str]] = None
-
+    genres: List[str] = None
+    directors_names: List[str] =None
+    actors_names: List[str] = None
+    writers_names: List[str] = None
+    directors: List[Person] = None
+    actors: List[Person] = None
+    writers: List[Person] = None
 
 type_map = {
-    str: "keyword",
-    datetime: "date",
-    int: "long",
-    float: "float",
-    bool: "boolean",
-    UUID: "keyword",
-    list: "keyword",
-    dict: "nested",
-    BaseModel: "nested",
+    "movies": {
+        str: "text",
+        Optional[str]: "text",
+        float: "float",
+        Optional[float]: "float",
+        UUID: "keyword",
+        List[str]: "keyword",
+        List[Optional[str]]: "keyword",
+        List[float]: "float",
+        List[UUID]: "keyword",
+    },
 }
+
+elastic_settings = {
+    "movies":{
+        "refresh_interval": "1s",
+            "analysis": {
+                "filter": {
+                    "english_stop": {
+                        "type": "stop",
+                        "stopwords": "_english_"
+                    },
+                    "english_stemmer": {
+                        "type": "stemmer",
+                        "language": "english"
+                    },
+                    "english_possessive_stemmer": {
+                        "type": "stemmer",
+                        "language": "possessive_english"
+                    },
+                    "russian_stop": {
+                        "type": "stop",
+                        "stopwords": "_russian_"
+                    },
+                    "russian_stemmer": {
+                        "type": "stemmer",
+                        "language": "russian"
+                    }
+                },
+                "analyzer": {
+                    "ru_en": {
+                        "tokenizer": "standard",
+                        "filter": [
+                            "lowercase",
+                            "english_stop",
+                            "english_stemmer",
+                            "english_possessive_stemmer",
+                            "russian_stop",
+                            "russian_stemmer"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+
 
 state_storage = JsonFileStorage("state.json")
 state = State(state_storage)

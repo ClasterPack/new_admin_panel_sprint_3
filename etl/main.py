@@ -1,7 +1,10 @@
 import logging
 
-from db_extractions import extract_data_from_postgres, get_postgres_connection
+from pydantic.experimental.pipeline import transform
+
+from db_extractions import extract_data_from_postgres, get_postgres_connection, get_updated_objects_ids
 from elastic import get_elasticsearch_client, load_data_to_elasticsearch, create_index
+from etl.data_transform import DataTransform
 from settings import Settings, Movie, state
 
 logging.basicConfig(level=logging.INFO)
@@ -15,12 +18,21 @@ def main(setup: Settings):
 
         logger.info("Extracting data from PostgreSQL...")
         movies_data = extract_data_from_postgres(conn)
+        transformed_movies_data = DataTransform(Movie).transform_fw_data(movies_data)
 
         create_index(Movie, "movies", es)
 
-        logger.info("Loading data to Elasticsearch...")
-        load_data_to_elasticsearch(es, movies_data, batch_size=100, state=state)
+        load_data_to_elasticsearch(
+            es, transformed_movies_data,
+            batch_size=100,
+            state=state, state_key='last_loaded_id', state_param='id'
+        )
         logger.info("Data successfully loaded to Elasticsearch.")
+        while True:
+            updated_ids=get_updated_objects_ids(
+                conn, state,'person','person_update'
+            )
+
 
     except Exception as e:
         logger.error("An error occurred: %s" % str(e))

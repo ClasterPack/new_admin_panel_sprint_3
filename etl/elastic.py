@@ -6,7 +6,8 @@ from elasticsearch import Elasticsearch, RequestError, NotFoundError
 from elasticsearch.helpers import bulk
 from pydantic import TypeAdapter, BaseModel
 
-from etl.settings import Movie, Settings, type_map
+from etl.data_transform import DataTransform
+from etl.settings import Movie, Settings, type_map, elastic_settings
 from etl.state import State
 
 logger = logging.getLogger(__name__)
@@ -30,38 +31,13 @@ def get_elasticsearch_client(config: Settings) -> Elasticsearch:
         raise
 
 
-@backoff.on_exception(backoff.expo, Exception, max_tries=5, jitter=None)
-def transform_data(data: List[dict]):
-    bulk_data = []
-    # Создаем TypeAdapter для модели Movie
-    movie_adapter = TypeAdapter(Movie)
-
-    movie_objects = [movie_adapter.validate_python(movie) for movie in data]
-
-    for movie in movie_objects:
-        action = {
-            "_op_type": "index",
-            "_index": "movies",
-            "_id": movie.id,
-            "_source": {
-                "title": movie.title,
-                "description": movie.description,
-                "imdb_rating": movie.imdb_rating,
-                "genres": movie.genres,
-                "directors_names": movie.directors_names,
-                "actors_names": movie.actors_names,
-                "writers_names": movie.writers_names,
-            },
-        }
-        bulk_data.append(action)
-
-    logger.info(f"Transforming {len(bulk_data)} movies to Elasticsearch...")
-    return bulk_data
 
 
 @backoff.on_exception(backoff.expo, Exception, max_tries=5, jitter=None)
 def load_data_to_elasticsearch(
-    es: Elasticsearch, data: List[Dict[str, Any]], batch_size: int, state: State
+    es: Elasticsearch, data: List[Dict[str, Any]],
+        batch_size: int, state: State,
+        state_key: str, state_param: str,
 ) -> None:
     """
     Загружает данные в Elasticsearch с использованием bulk-запроса.
@@ -69,22 +45,25 @@ def load_data_to_elasticsearch(
     :param es: Клиент Elasticsearch.
     :param data: Список словарей с данными для загрузки.
     :param batch_size: Размер пакета данных для загрузки.
+    :param state: Класс состояния.
+    :param state_key: Ключ состояния.
+    :param state_param Ключ по полю для поиска.
     :return: None
     """
-    last_loaded_id = state.get_state("last_loaded_id")
+    last_loaded = state.get_state(state_key)
 
     try:
         total = len(data)
         logger.info("Loading %s records from Elasticsearch." % total)
         start_index = 0
-        if last_loaded_id:
+        if last_loaded:
             for i, item in enumerate(data):
-                if item.get("id") == last_loaded_id:
+                if item.get(state_param) == last_loaded:
                     start_index = i + 1
                     break
         for i in range(start_index, total, batch_size):
             batch = data[i : i + batch_size]
-            bulk_data = transform_data(batch)
+            bulk_data = batch
             try:
                 success, failed = bulk(
                     es,
@@ -98,59 +77,57 @@ def load_data_to_elasticsearch(
             except Exception as e:
                 logger.error(f"Failed to load batch starting at index %s: %s", i, e)
             if batch:
-                last_loaded_id = batch[-1].get("id")
+                if state_param=='id':
+                    state_param='_id'
+                last_loaded = batch[-1].get(state_param)
                 state.set_state(
-                    "last_loaded_id", last_loaded_id
-                )  # Сохраняем ID в состоянии
+                    state_key, last_loaded
+                )
     except Exception as e:
         logger.error("Failed to load data to Elasticsearch: %s" % e)
 
-
-def create_es_mapping(pydantic_model: BaseModel):
-    mapping = {"properties": {}}
+def create_es_mapping(pydantic_model: Type[BaseModel], index_name: str):
+    mapping = {}
+    index_type_map = type_map.get(index_name, {})
 
     for field, field_type in pydantic_model.__annotations__.items():
-        es_field_type = type_map.get(field_type)
+        es_field_type = index_type_map.get(field_type)
 
         if es_field_type:
-            mapping["properties"][field] = {"type": es_field_type}
+            mapping[field] = {"type": es_field_type}
         elif hasattr(field_type, "__origin__"):
-            if field_type.__origin__ == List:
+            if field_type.__origin__ == list:
                 list_item_type = field_type.__args__[0]
-                if isinstance(list_item_type, type) and issubclass(
-                    list_item_type, BaseModel
-                ):
-                    mapping["properties"][field] = {
+                if isinstance(list_item_type, type) and issubclass(list_item_type, BaseModel):
+                    mapping[field] = {
                         "type": "nested",
-                        "properties": create_es_mapping(list_item_type)["properties"],
+                        "properties": create_es_mapping(list_item_type, index_name),
                     }
                 else:
-                    mapping["properties"][field] = {"type": "keyword"}
+                    mapping[field] = {"type": "keyword"}
             else:
-                mapping["properties"][field] = {"type": "keyword"}
+                mapping[field] = {"type": "keyword"}
         elif isinstance(field_type, type) and issubclass(field_type, BaseModel):
-            mapping["properties"][field] = {
+            mapping[field] = {
                 "type": "nested",
-                "properties": create_es_mapping(field_type)["properties"],
+                "properties": create_es_mapping(field_type, index_name),
             }
         else:
-            logger.warning(
-                f"Field {field} has no type defined, defaulting to 'keyword'."
-            )
-            mapping["properties"][field] = {"type": "keyword"}
+            logger.warning(f"Field {field} has no type defined, defaulting to 'keyword'.")
+            mapping[field] = {"type": "keyword"}
 
     return mapping
 
 
+
 @backoff.on_exception(backoff.expo, Exception, max_tries=5, jitter=None)
 def create_index(
-    model: BaseModel, index_name: str, es: Elasticsearch, settings: dict = None
+    model: Type[BaseModel], index_name: str, es: Elasticsearch, settings: dict = None
 ):
-    # Generate the mapping for the model
-    mapping = {"mappings": {"properties": create_es_mapping(model)}}
-
-    if settings:
-        mapping["settings"] = settings
+    mapping = {"mappings": {"properties": create_es_mapping(model, index_name)}}
+    if not settings:
+        settings = elastic_settings.get(index_name, {})
+    mapping["settings"] = settings
 
     try:
         logger.info("Creating index '%s'..." % index_name)
@@ -164,6 +141,4 @@ def create_index(
     except NotFoundError as e:
         logger.error(f"Elasticsearch service not found. Error: %s" % str(e))
     except Exception as e:
-        logger.error(
-            f"An unexpected error occurred while creating the index: %s" % str(e)
-        )
+        logger.error(f"An unexpected error occurred while creating the index: %s" % str(e))
