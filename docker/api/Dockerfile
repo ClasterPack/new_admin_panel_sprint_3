@@ -22,7 +22,9 @@ RUN poetry install --no-root
 COPY ./docker/api/entrypoint.sh /web/entrypoint.sh
 COPY ./app/ .
 
-RUN poetry run python manage.py collectstatic --no-input
+
+CMD ["poetry", "run", "python", "manage.py", "collectctsatatic", "--no-input"]
+
 
 ENTRYPOINT ["/web/entrypoint.sh"]
 

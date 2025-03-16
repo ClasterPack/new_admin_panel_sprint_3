@@ -79,11 +79,29 @@ services:
       theatre-db:
         condition: service_healthy
 
+  etl:
+      build:
+        context: .
+        dockerfile: docker/etl/Dockerfile
+      container_name: theatre-etl
+      volumes:
+        - etl:/etl
+      depends_on:
+        theatre-db:
+          condition: service_healthy
+        elasticsearch:
+          condition: service_healthy
+      env_file:
+        - ./.env
+      networks:
+        - theatre_network
+
 
 volumes:
   content_db:
   static_volume:
   es_data:
+  etl:
 
 networks:
   theatre_network:

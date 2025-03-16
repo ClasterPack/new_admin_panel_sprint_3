@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_USER: str
     POSTGRES_PASSWORD: str
-    POSTGRES_HOST: str
+    SQL_HOST: str
     ES_HOST: str
     ES_INDEX: str
     BATCH_SIZE: int

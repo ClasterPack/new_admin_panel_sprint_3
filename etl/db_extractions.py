@@ -19,7 +19,7 @@ class DBExtractions:
 
         try:
             conn = psycopg.connect(
-                host=config.POSTGRES_HOST,
+                host=config.SQL_HOST,
                 dbname=config.POSTGRES_DB,
                 user=config.POSTGRES_USER,
                 password=config.POSTGRES_PASSWORD,
