@@ -1,10 +1,9 @@
 import abc
 import json
+import logging
 import os
 from typing import Any, Dict
 from uuid import UUID
-from typing import Any, Dict
-import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

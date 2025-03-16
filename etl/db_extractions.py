@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 class DBExtractions:
-    def __init__(self,config: Settings , state: State):
+    def __init__(self, config: Settings, state: State):
         self.state: State = state
         self.config = config
 
@@ -29,7 +29,6 @@ class DBExtractions:
         except Exception as e:
             logger.error("Error connecting to PostgreSQL: %s" % str(e))
             raise
-
 
     def extract_data(self) -> List[Dict[str, Any]]:
         query = """
@@ -79,8 +78,8 @@ class DBExtractions:
         """
         with self.conn.cursor(row_factory=dict_row) as cursor:
             cursor.execute(query)
-            rows= cursor.fetchall()
-            data =[]
+            rows = cursor.fetchall()
+            data = []
             for row in rows:
                 movie = Movie(
                     id=row["id"],
@@ -94,22 +93,20 @@ class DBExtractions:
                     directors=row["directors"],
                     actors=row["actors"],
                     writers=row["writers"],
-                    modified=row["modified"]
+                    modified=row["modified"],
                 )
                 data.append(movie.model_dump())
             data.sort(key=lambda x: x["modified"])
         return data
 
     def get_updated_objects_ids(
-            self,
-            table: Literal['person','genre'],
-            key_state: str
+        self, table: Literal["person", "genre"], key_state: str
     ) -> tuple[list, datetime.datetime] or None:
         with closing(self.conn.cursor()) as psql_cursor:
             time = self.state.get_state(key_state)
             if time is None:
                 time = datetime.datetime.min
-            query=f"""
+            query = f"""
             SELECT id, modified
             FROM content.{table}
             WHERE modified > '{time}'
@@ -120,14 +117,12 @@ class DBExtractions:
             results = psql_cursor.fetchall()
             if results:
                 time = results[-1][1]
-                ids=list(i[0]for i in results)
+                ids = list(i[0] for i in results)
                 return ids, time
             else:
                 return None
 
-    def get_updated_fw(
-            self, state_key: str
-    ) -> tuple[list, datetime.datetime] or None:
+    def get_updated_fw(self, state_key: str) -> tuple[list, datetime.datetime] or None:
         with self.conn.cursor(row_factory=dict_row) as psql_cursor:
             time = self.state.get_state(state_key)
             if time is None:
@@ -148,15 +143,14 @@ class DBExtractions:
 
             rows = psql_cursor.fetchall()
             if rows:
-                last_update_time = rows[-1]['modified']
+                last_update_time = rows[-1]["modified"]
                 return rows, last_update_time
             else:
                 return None
 
-
-    def updates_genres(self,updated_ids):
-        str_updated_ids = ', '.join([f"'{uuid}'" for uuid in updated_ids])
-        logger.info(f'Updating Genres : %s', len(updated_ids))
+    def updates_genres(self, updated_ids):
+        str_updated_ids = ", ".join([f"'{uuid}'" for uuid in updated_ids])
+        logger.info(f"Updating Genres : %s", len(updated_ids))
         query = f"""
         SELECT
             fw.id,
@@ -172,8 +166,8 @@ class DBExtractions:
             rows = psql_cursor.fetchall()
             return rows
 
-    def update_persons(self,updated_ids):
-        str_updated_ids = ', '.join([f"'{uuid}'" for uuid in updated_ids])
+    def update_persons(self, updated_ids):
+        str_updated_ids = ", ".join([f"'{uuid}'" for uuid in updated_ids])
         query = f"""
                 SELECT
                     fw.id,
@@ -217,11 +211,3 @@ class DBExtractions:
             psql_cursor.execute(query)
             rows = psql_cursor.fetchall()
             return rows
-
-
-
-
-
-
-
-
