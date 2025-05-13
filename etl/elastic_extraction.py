@@ -42,7 +42,7 @@ class ElasticExtraction:
         else:
             self.es.load_data_to_elasticsearch(
                 data=transformed_movies_data,
-                batch_size=self.setup.BATCH_SIZE,
+                batch_size=self.setup.batch_size,
                 state_key=state_key,
                 state_param="id",
             )

@@ -10,14 +10,14 @@ from etl.state import JsonFileStorage, State
 
 
 class Settings(BaseSettings):
-    POSTGRES_DB: str
-    POSTGRES_USER: str
-    POSTGRES_PASSWORD: str
-    SQL_HOST: str
-    ES_HOST: str
-    ES_INDEX: str
-    BATCH_SIZE: int
-    UPDATE_FREQUENCY: int
+    postgres_db: str
+    postgres_user: str
+    postgres_password: str
+    sql_host: str
+    es_host: str
+    es_index: str
+    batch_size: int
+    update_frequency: int
 
     class Config:
         env_file = os.path.join(os.path.dirname(__file__), "../.env")

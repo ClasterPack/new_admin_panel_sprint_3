@@ -23,7 +23,7 @@ def main(elastic_extraction: ElasticExtraction):
         elastic_extraction.update_fw_data("last_update_fw")
         elastic_extraction.update_genre("last_updated_genre")
         elastic_extraction.update_person("last_updated_person")
-        sleep(elastic_extraction.setup.UPDATE_FREQUENCY)
+        sleep(elastic_extraction.setup.update_frequency)
 
 
 if __name__ == "__main__":

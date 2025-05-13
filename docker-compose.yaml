@@ -20,6 +20,7 @@ services:
       dockerfile: docker/api/Dockerfile
     container_name: theatre-api
     volumes:
+      - ./static:/code/static
       - static_volume:/code/staticfiles
     env_file:
       - ./.env

@@ -18,7 +18,7 @@ class ElasticSearchLoader:
         self.state = state
         try:
             es = Elasticsearch(
-                config.ES_HOST,
+                config.es_host,
                 http_compress=True,
                 headers={"Content-Type": "application/x-ndjson"},
             )

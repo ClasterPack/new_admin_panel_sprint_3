@@ -19,10 +19,10 @@ class DBExtractions:
 
         try:
             conn = psycopg.connect(
-                host=config.SQL_HOST,
-                dbname=config.POSTGRES_DB,
-                user=config.POSTGRES_USER,
-                password=config.POSTGRES_PASSWORD,
+                host=config.sql_host,
+                dbname=config.postgres_db,
+                user=config.postgres_user,
+                password=config.postgres_password,
             )
             logger.info("Successfully connected to PostgreSQL.")
             self.conn = conn
@@ -111,7 +111,7 @@ class DBExtractions:
             FROM content.{table}
             WHERE modified > '{time}'
             ORDER BY modified
-            LIMIT '{self.config.BATCH_SIZE}';
+            LIMIT '{self.config.batch_size}';
             """
             psql_cursor.execute(query)
             results = psql_cursor.fetchall()
@@ -137,7 +137,7 @@ class DBExtractions:
             FROM content.film_work fw
             WHERE fw.modified > '{time}'
             ORDER BY fw.modified
-            LIMIT '{self.config.BATCH_SIZE}';
+            LIMIT '{self.config.batch_size}';
             """
             psql_cursor.execute(query)
 

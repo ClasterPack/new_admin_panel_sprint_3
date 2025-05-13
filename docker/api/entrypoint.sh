@@ -23,6 +23,9 @@ DJANGO_SUPERUSER_USERNAME=admin \
   DJANGO_SUPERUSER_EMAIL=mail@mail.ru \
   poetry run python manage.py createsuperuser --noinput || true
 
+echo "Collecting static files..."
+poetry run python manage.py collectstatic --noinput
+
 poetry run gunicorn config.wsgi:application --bind 0.0.0.0:8000 --reload
 
 exec "$@"
