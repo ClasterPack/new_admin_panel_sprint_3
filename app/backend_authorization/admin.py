@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.conf import settings
 from django.contrib.auth.admin import UserAdmin
 
-from .models import User, RemoteRole, Role
+from .models import User, Role, Permission
 
 
 @admin.register(User)
@@ -29,3 +29,14 @@ class CustomUserAdmin(UserAdmin):
     )
 
 
+@admin.register(Permission)
+class PermissionAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'description')
+    search_fields = ('name', 'code')
+
+
+@admin.register(Role)
+class RoleAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description')
+    search_fields = ('name',)
+    filter_horizontal = ('permissions', 'users')
