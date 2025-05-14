@@ -14,18 +14,17 @@ echo "Current PYTHONPATH: $PYTHONPATH"
 
 chmod -R 775 /code
 
-
-poetry run python manage.py migrate --fake --fake movies_admin 0001
+poetry run python manage.py makemigrations --no-input
 poetry run python manage.py migrate --no-input
 
-DJANGO_SUPERUSER_USERNAME=admin \
-  DJANGO_SUPERUSER_PASSWORD=123123 \
-  DJANGO_SUPERUSER_EMAIL=mail@mail.ru \
-  poetry run python manage.py createsuperuser --noinput || true
+#DJANGO_SUPERUSER_USERNAME=admin \
+  #DJANGO_SUPERUSER_PASSWORD=123123 \
+  #DJANGO_SUPERUSER_EMAIL=mail@mail.ru \
+  #poetry run python manage.py createsuperuser --noinput || true
 
 echo "Collecting static files..."
 poetry run python manage.py collectstatic --noinput
 
-poetry run gunicorn config.wsgi:application --bind 0.0.0.0:8000 --reload
+poetry run gunicorn config.wsgi:application --bind 0.0.0.0:8020 --reload
 
 exec "$@"

@@ -23,6 +23,7 @@ ALLOWED_HOSTS = [
     os.environ.get("DJANGO_IP"),
     os.environ.get("DJANGO_HOST"),
     os.environ.get("NGINX_HOST"),
+    "*",
 ]
 
 
@@ -37,8 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "movies_admin",
     "rest_framework",
-    "rest_framework.authtoken",
-    "drf_spectacular",
+    "backend_authorization"
 ]
 if DEBUG:
     INSTALLED_APPS += ["debug_toolbar"]
@@ -184,7 +184,6 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {"user": "10000/day", "anon": "1000/day"},
     "DEFAULT_PAGINATION_CLASS": "movies_admin.paginators.TotalPagesCountPaginator",
     "PAGE_SIZE": 50,
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [
@@ -194,3 +193,12 @@ STATICFILES_DIRS = [
 
 MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
+
+AUTH_USER_MODEL = "backend_authorization.User"
+AUTHENTICATION_BACKENDS = [
+    'backend_authorization.backend.CustomBackend',
+    # 'django.contrib.auth.backends.ModelBackend',
+]
+AUTH_API_LOGIN_URL = os.environ.get('AUTH_API_LOGIN_URL')
+
+FASTAPI_BASE_URL = os.environ.get('FASTAPI_BASE_URL')

@@ -20,6 +20,7 @@ services:
       dockerfile: docker/api/Dockerfile
     container_name: theatre-api
     volumes:
+      - ./app:/code
       - ./static:/code/static
       - static_volume:/code/staticfiles
     env_file:
@@ -38,7 +39,7 @@ services:
     restart: always
     volumes:
       - content_db:/var/lib/postgresql/data/
-      - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./movies_admin.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     env_file:
@@ -106,4 +107,4 @@ volumes:
 
 networks:
   theatre_network:
-    driver: bridge
+    external: true

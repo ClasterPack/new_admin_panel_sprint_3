@@ -18,7 +18,7 @@ COPY ./pyproject.toml ./poetry.lock ./
 RUN poetry install --no-root
 
 COPY ./docker/api/entrypoint.sh /web/entrypoint.sh
-COPY ./app/ .
+#COPY ./app/ .
 
 ENTRYPOINT ["/web/entrypoint.sh"]
 
