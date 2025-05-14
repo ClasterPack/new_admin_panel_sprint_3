@@ -17,6 +17,7 @@ COPY ./pyproject.toml ./poetry.lock ./
 
 RUN poetry install --no-root
 
+COPY movies_admin.sql /code/movies_admin.sql
 COPY ./docker/api/entrypoint.sh /web/entrypoint.sh
 #COPY ./app/ .
 
