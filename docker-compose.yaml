@@ -26,35 +26,11 @@ services:
     env_file:
       - ./.env
     depends_on:
-      theatre-db:
-        condition: service_healthy
       elasticsearch:
         condition: service_healthy
     networks:
       - theatre_network
 
-  theatre-db:
-    image: postgres:14
-    container_name: theatre-db
-    restart: always
-    volumes:
-      - content_db:/var/lib/postgresql/data/
-      - ./movies_admin.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
-    env_file:
-      - ./.env
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "sh -c 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}'",
-        ]
-      interval: 30s
-      timeout: 30s
-      retries: 3
-    networks:
-      - theatre_network
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.17.3
@@ -77,9 +53,6 @@ services:
       interval: 30s
       retries: 3
       timeout: 30s
-    depends_on:
-      theatre-db:
-        condition: service_healthy
 
   etl:
       build:
@@ -89,10 +62,10 @@ services:
       volumes:
         - etl:/etl
       depends_on:
-        theatre-db:
-          condition: service_healthy
         elasticsearch:
           condition: service_healthy
+        api:
+          condition: service_started
       env_file:
         - ./.env
       networks:

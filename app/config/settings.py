@@ -197,7 +197,7 @@ MEDIA_URL = "/media/"
 AUTH_USER_MODEL = "backend_authorization.User"
 AUTHENTICATION_BACKENDS = [
     'backend_authorization.backend.CustomBackend',
-    # 'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
 ]
 AUTH_API_LOGIN_URL = os.environ.get('AUTH_API_LOGIN_URL')
 
